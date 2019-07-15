@@ -44,24 +44,23 @@ def conv2d_vector(x_in, conv_weight, conv_bias, device):
     return Z
 
 
-def im2col(img, kernel_size, device, stride=1):
-    N, C, H, W = img.shape
-
-    out_height = (H - kernel_size) // stride + 1
-    out_width = (W - kernel_size) // stride + 1
-    col = torch.zeros((kernel_size, kernel_size, N, C, out_height, out_width)).to(device)
+def im2col(X, kernel_size, device, stride=1):
+    N_in, C_in, S_in, _ = X.shape
+    S_out = (S_in - kernel_size) // stride + 1
+    Z = torch.zeros((kernel_size, kernel_size, N_in, C_in, S_out, S_out)).to(device)
 
     for y in range(kernel_size):
-        y_max = y + stride * out_height
         for x in range(kernel_size):
-            x_max = x + stride * out_width
-            col[y, x, :, :, :, :] = img[:, :, y:y_max:stride, x:x_max:stride]
-    return col.view((kernel_size ** 2, -1))
+            y_to = y + stride * out_height
+            x_to = x + stride * out_width
+            Z[y, x, :, :, :, :] = X[:, :, y:y_to:stride, x:x_to:stride]
+    return Z.view((kernel_size ** 2, -1))
 
 
 def conv_weight2rows(conv_weight):
-    c_out, c_in = conv_weight.shape[0:2]
-    return conv_weight.clone().view((c_out * c_in, -1))
+    conv_weight = conv_weight.clone()
+    C_out, C_in = conv_weight.shape[0:2]
+    return conv_weight.view((C_out * C_in, -1))
 
 
 def pool2d_scalar(a, device):
